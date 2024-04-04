@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product List</title>
+</head>
+<body>
+    <h1>Login</h1>
+    <form id="login-form">
+        <label for="email">Email:</label>
+        <input type="email" id="email" name="email" required><br>
+        <label for="password">Password:</label>
+        <input type="password" id="password" name="password" required><br>
+        <button type="submit">Login</button>
+    </form>
+    <h1>Product List</h1>
+    <ul id="product-list"></ul>
+    <p id="login-success-message" style="display: none;">Login successful!</p>
+    <h2>Add New Product</h2>
+    <form id="add-product-form" enctype="multipart/form-data">
+        <!-- Use enctype="multipart/form-data" -->
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name" required><br>
+        <label for="description">Description:</label>
+        <input type="text" id="description" name="description" required><br>
+        <label for="price">Price:</label>
+        <input type="number" id="price" name="productprice" step="0.01" required><br>
+        <label for="category">Category:</label>
+        <input type="text" id="category" name="productcategory" required><br>
+        <label for="image">Image:</label>
+        <input type="file" id="image" name="image"><br>
+        <button type="submit">Add Product</button>
+    </form>
+
+    <script>
+        async function fetchProducts() {
+            const response = await fetch('http://localhost:1337/products');
+            const data = await response.json();
+            return data;
+        }
+
+        async function displayProducts() {
+            const productList = document.getElementById('product-list');
+            const products = await fetchProducts();
+            productList.innerHTML = ''; // Clear the list before re-adding products
+            products.forEach(product => {
+                const listItem = document.createElement('li');
+                listItem.innerHTML = `
+                                        <div>
+                                            <h3>${product.name}</h3>
+                                            <p>${product.description}</p>
+                                            <p>Price: $${product.productprice}</p>
+                                            <p>Category: ${product.productcategory}</p>`;
+                if (product.image) {
+                    // If image exists, create a Blob object and convert data to ArrayBuffer
+                    const blob = new Blob([new Uint8Array(product.image.data)], { type: 'image/jpeg' });
+                    const imageURL = URL.createObjectURL(blob);
+                    // Add <img> element to product list
+                    listItem.innerHTML += `<img src="${imageURL}" alt="${product.name}">`;
+                } else {
+                    // If image doesn't exist, display a message
+                    listItem.innerHTML += '<p>No image available</p>';
+                }
+                listItem.innerHTML += `<button onclick="deleteProduct('${product.productid}')">Delete</button></div>`;
+                productList.appendChild(listItem);
+            });
+        }
+
+        async function addProduct(event) {
+            event.preventDefault(); // Prevent default form behavior
+            const form = event.target;
+            const formData = new FormData(form);
+            const headers = new Headers();
+            const response = await fetch('http://localhost:1337/products', {
+                method: 'POST',
+                body: formData,
+                headers: headers
+            });
+            if (response.ok) {
+                form.reset(); // Clear the form after adding product
+                displayProducts(); // Refresh the product list
+            } else {
+                alert('Failed to add product.');
+            }
+        }
+
+        async function deleteProduct(productId) {
+            try {
+                const response = await fetch(`http://localhost:1337/products/${productId}`, {
+                    method: 'DELETE'
+                });
+                if (response.ok) {
+                    displayProducts(); // Refresh product list after deletion
+                } else {
+                    console.error('Error deleting product');
+                    alert('Failed to delete product.');
+                }
+            } catch (error) {
+                console.error('Network error', error);
+                alert('Network error. Please try again later.');
+            }
+        }
+
+        document.getElementById('add-product-form').addEventListener('submit', addProduct);
+
+        async function loginUser(event) {
+            event.preventDefault(); // Prevent default form behavior
+            const form = event.target;
+            const formData = new FormData(form);
+            const headers = new Headers();
+            const response = await fetch('http://localhost:1337/login', {
+                method: 'POST',
+                body: formData,
+                headers: headers
+            });
+            if (response.ok) {
+                // Display login success message
+                document.getElementById('login-success-message').style.display = 'block';
+                // Update product list
+                displayProducts();
+            } else {
+                alert('Invalid email or password.');
+            }
+        }
+
+        document.getElementById('login-form').addEventListener('submit', loginUser);
+
+        displayProducts(); // Display products on page load
+    </script>
+</body>
+</html>
