@@ -63,8 +63,6 @@ app.post('/register', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-
-
 // User login endpoint
 app.post('/login', async (req, res) => {
     console.log(req.body)
@@ -97,7 +95,19 @@ app.post('/login', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-
+app.delete('/logout', (req, res) => {
+    if (req.session.user) {
+        req.session.destroy((err) => {
+            if (err) {
+                return res.status(500).json({ error: 'Failed to logout' });
+            }
+            res.clearCookie('11ciastko11');
+            res.json({ message: 'Logout successful' });
+        });
+    } else {
+        res.status(400).json({ error: 'No user logged in' });
+    }
+});
 // Middleware to require employee authentication
 function requireEmployeeAuth(req, res, next) {
     console.log(req.session)
@@ -109,16 +119,97 @@ function requireEmployeeAuth(req, res, next) {
 }
 const requireUserAuth = (req, res, next) => {
     if (req.session && req.session.user) {
-        // Je�li u�ytkownik jest zalogowany, przejd� do kolejnej funkcji middleware
+        // Jeśli użytkownik jest zalogowany, przejdź do kolejnej funkcji middleware
         next();
     } else {
-        // Je�li u�ytkownik nie jest zalogowany, zwr�� b��d 401 Unauthorized
+        // Jeśli użytkownik nie jest zalogowany, zwróć błąd 401 Unauthorized
         res.status(401).json({ error: 'Unauthorized' });
     }
 };
-// Endpoint do pobierania adresu zalogowanego u�ytkownika
+app.put('/user/password', requireUserAuth, async (req, res) => {
+    const userId = req.session.user.userId;
+    const { currentPassword, newPassword } = req.body;
+
+    try {
+        // 1. Pobierz użytkownika z bazy danych na podstawie userId
+        const userQueryResult = await pool.query('SELECT * FROM users WHERE userid = $1', [userId]);
+
+        // 2. Sprawdź czy użytkownik istnieje
+        if (userQueryResult.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        const user = userQueryResult.rows[0];
+
+        // 3. Sprawdź czy podane aktualne hasło jest poprawne
+        const passwordMatch = await bcrypt.compare(currentPassword, user.password);
+        if (!passwordMatch) {
+            return res.status(400).json({ error: 'Current password is incorrect' });
+        }
+
+        // 4. Zahasłuj nowe hasło
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+        // 5. Zaktualizuj hasło w bazie danych
+        await pool.query('UPDATE users SET password = $1 WHERE userid = $2', [hashedPassword, userId]);
+
+        // 6. Zwróć odpowiedź o sukcesie
+        res.status(200).json({ message: 'Password updated successfully' });
+    } catch (error) {
+        console.error('Error updating password:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+app.put('/user/phonenumber', requireUserAuth, async (req, res) => {
+    const userId = req.session.user.userId;
+    const { newPhoneNumber } = req.body;
+
+    try {
+        // 1. Pobierz użytkownika z bazy danych na podstawie userId
+        const userQueryResult = await pool.query('SELECT * FROM users WHERE userid = $1', [userId]);
+
+        // 2. Sprawdź czy użytkownik istnieje
+        if (userQueryResult.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // 3. Zaktualizuj numer telefonu w bazie danych
+        await pool.query('UPDATE users SET phonenumber = $1 WHERE userid = $2', [newPhoneNumber, userId]);
+
+        // 4. Zwróć odpowiedź o sukcesie
+        res.status(200).json({ message: 'Phone number updated successfully' });
+    } catch (error) {
+        console.error('Error updating phone number:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Endpoint do pobierania adresu zalogowanego użytkownika
 app.get('/user/address', requireUserAuth, async (req, res) => {
     const userId = req.session.user.userId;
+    try {
+        // Query to get user's address
+        const queryResult = await pool.query(
+            'SELECT a.* FROM addresses a INNER JOIN users u ON a.addressid = u.addressid WHERE u.userid = $1',
+            [userId]
+        );
+
+        // Check if user has an address
+        if (queryResult.rows.length === 0) {
+            return res.status(404).json({ error: 'User address not found' });
+        }
+
+        // Return user's address
+        res.json(queryResult.rows[0]);
+    } catch (error) {
+        console.error('Error fetching user address:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+app.get('/user/address/:userId', requireEmployeeAuth, async (req, res) => {
+    const { userId } = req.params;
+
     try {
         // Query to get user's address
         const queryResult = await pool.query(
@@ -165,29 +256,57 @@ app.post('/register/worker', requireEmployeeAuth, async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-
-// Handling POST request to add a new order
-app.post('/orders', async (req, res) => {
-    const { userid, items, orderstatus } = req.body;
-    const orderdate = new Date(); // Current date and time
+app.get('/user/profile', requireUserAuth, async (req, res) => {
+    const userId = req.session.user.userId;
 
     try {
-        // Insert new order into the database
+        // Pobranie danych użytkownika z tabeli users
+        const userQueryResult = await pool.query(
+            'SELECT firstname, lastname, email, phonenumber, type FROM users WHERE userid = $1',
+            [userId]
+        );
+
+        // Sprawdzenie, czy użytkownik istnieje
+        if (userQueryResult.rows.length === 0) {
+            return res.status(404).json({ error: 'User not found' });
+        }
+
+        // Zwrócenie danych użytkownika
+        const user = userQueryResult.rows[0];
+        res.json(user);
+    } catch (error) {
+        console.error('Error fetching user profile:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+
+// Handling POST request to add a new order
+app.post('/user/orders', requireUserAuth, async (req, res) => {
+    const userid = req.session.user.userId;
+    const { items, orderstatus, wholeprice, is_take_out } = req.body;
+    const orderdate = new Date(); // Aktualna data i czas
+
+    try {
+        // Wstawienie nowego zamówienia do bazy danych
         const orderQueryResult = await pool.query(
-            'INSERT INTO orders (userid, orderdate, orderstatus) VALUES ($1, $2, $3) RETURNING orderid',
-            [userid, orderdate, orderstatus]
+            'INSERT INTO orders (userid, orderdate, orderstatus, wholeprice, is_take_out) VALUES ($1, $2, $3, $4, $5) RETURNING orderid',
+            [userid, orderdate, orderstatus, wholeprice, is_take_out]
         );
         const orderId = orderQueryResult.rows[0].orderid;
 
-        // Insert items (products and extras) into the product_extras_to_order table
-        const insertPromises = items.map(async (item) => {
+        // Spłaszczenie tablicy items
+        const flatItems = items.flat();
+
+        // Wstawienie produktów i dodatków do tabeli product_extras_to_order
+        const insertPromises = flatItems.map(async (item) => {
             const { productid, extras, reciptprice } = item;
-            // Insert product into the product_extras_to_order table
+            // Wstawienie produktu do tabeli product_extras_to_order
             await pool.query(
                 'INSERT INTO product_extras_to_order (orderid, productid, reciptprice) VALUES ($1, $2, $3)',
                 [orderId, productid, reciptprice]
             );
-            // Insert extras into the product_extras_to_order table
+            // Wstawienie dodatków do tabeli product_extras_to_order
             if (extras && extras.length > 0) {
                 for (const extra of extras) {
                     await pool.query(
@@ -198,7 +317,7 @@ app.post('/orders', async (req, res) => {
             }
         });
 
-        // Wait for all insert operations to complete
+        // Oczekiwanie na zakończenie wszystkich operacji wstawiania
         await Promise.all(insertPromises);
 
         res.status(201).json({ message: 'Order added successfully' });
@@ -208,12 +327,78 @@ app.post('/orders', async (req, res) => {
     }
 });
 
+app.get('/user/orders', requireUserAuth, async (req, res) => {
+    const userId = req.session.user.userId;
+
+    try {
+        // Zapytanie do bazy danych, aby pobrać zamówienia zalogowanego użytkownika
+        const ordersQueryResult = await pool.query(
+            'SELECT o.orderid, o.userid, o.orderdate, o.wholeprice, o.orderstatus, o.is_take_out, ' +
+            'p.productid, p.name AS product_name, p.description AS product_description, p.productprice, ' +
+            'e.extrasid, e.name AS extras_name, e.extrasprice ' +
+            'FROM orders o ' +
+            'LEFT JOIN product_extras_to_order pe ON o.orderid = pe.orderid ' +
+            'LEFT JOIN products p ON pe.productid = p.productid ' +
+            'LEFT JOIN extras e ON pe.extrasid = e.extrasid ' +
+            'WHERE o.userid = $1',
+            [userId]
+        );
+
+        // Przetworzenie wyników zapytania w celu sformatowania ich według potrzeb
+        const ordersMap = new Map();
+
+        ordersQueryResult.rows.forEach(row => {
+            if (!ordersMap.has(row.orderid)) {
+                ordersMap.set(row.orderid, {
+                    orderid: row.orderid,
+                    userid: row.userid,
+                    orderdate: row.orderdate,
+                    wholeprice: row.wholeprice,
+                    orderstatus: row.orderstatus,
+                    is_take_out: row.is_take_out, // Dodanie pola is_take_out
+                    products: []
+                });
+            }
+
+            const order = ordersMap.get(row.orderid);
+            const productIndex = order.products.findIndex(p => p.productid === row.productid);
+
+            if (productIndex === -1) {
+                order.products.push({
+                    productid: row.productid,
+                    product_name: row.product_name,
+                    product_description: row.product_description,
+                    productprice: row.productprice,
+                    extras: []
+                });
+            }
+
+            const product = order.products.find(p => p.productid === row.productid);
+
+            if (row.extrasid) {
+                product.extras.push({
+                    extrasid: row.extrasid,
+                    extras_name: row.extras_name,
+                    extrasprice: row.extrasprice
+                });
+            }
+        });
+
+        // Zwrócenie informacji o zamówieniach z produktami i dodatkami jako odpowiedź
+        res.json(Array.from(ordersMap.values()));
+    } catch (error) {
+        console.error('Query error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+
 // Handling GET request to retrieve orders with products and extras
 app.get('/orders', async (req, res) => {
     try {
-        // Query database to get orders information
+        // Query the database to fetch order information
         const ordersQueryResult = await pool.query(
-            'SELECT o.orderid, o.userid, o.orderdate, o.quantity, o.wholeprice, o.orderstatus, ' +
+            'SELECT o.orderid, o.userid, o.orderdate, o.wholeprice, o.orderstatus, o.is_take_out, ' +
             'p.productid, p.name AS product_name, p.description AS product_description, p.productprice, ' +
             'e.extrasid, e.name AS extras_name, e.extrasprice ' +
             'FROM orders o ' +
@@ -222,16 +407,55 @@ app.get('/orders', async (req, res) => {
             'LEFT JOIN extras e ON pe.extrasid = e.extrasid'
         );
 
-        // Process the query result to format it as needed
-        // (grouping orders, products, and extras together)
+        // Process the query results to format them as needed
+        const ordersMap = new Map();
 
-        // Return orders information with products and extras as response
-        res.json(ordersQueryResult.rows);
+        ordersQueryResult.rows.forEach(row => {
+            if (!ordersMap.has(row.orderid)) {
+                ordersMap.set(row.orderid, {
+                    orderid: row.orderid,
+                    userid: row.userid,
+                    orderdate: row.orderdate,
+                    wholeprice: row.wholeprice,
+                    orderstatus: row.orderstatus,
+                    is_take_out: row.is_take_out, // Include is_take_out field
+                    products: []
+                });
+            }
+
+            const order = ordersMap.get(row.orderid);
+            const productIndex = order.products.findIndex(p => p.productid === row.productid);
+
+            if (productIndex === -1) {
+                order.products.push({
+                    productid: row.productid,
+                    product_name: row.product_name,
+                    product_description: row.product_description,
+                    productprice: row.productprice,
+                    extras: []
+                });
+            }
+
+            const product = order.products.find(p => p.productid === row.productid);
+
+            if (row.extrasid) {
+                product.extras.push({
+                    extrasid: row.extrasid,
+                    extras_name: row.extras_name,
+                    extrasprice: row.extrasprice
+                });
+            }
+        });
+
+        // Return the formatted order information as a response
+        res.json(Array.from(ordersMap.values()));
     } catch (error) {
         console.error('Query error:', error);
         res.status(500).json({ error: 'Server error' });
     }
 });
+
+
 
 // Handling PUT request to update order status
 app.put('/orders/:orderid/status', requireEmployeeAuth, async (req, res) => {
@@ -261,7 +485,7 @@ app.get('/products', async (req, res) => {
     console.log(req.session)
     try {
         // Query database to get product information
-        const productsQueryResult = await pool.query('SELECT productid, name, description, productprice, productcategory, image FROM products');
+        const productsQueryResult = await pool.query('SELECT productid, name, description, productprice, productcategory, image, is_locked FROM products');
         // Check if any products were returned
         if (productsQueryResult.rows.length === 0) {
             return res.status(404).json({ error: 'No products found' });
@@ -292,35 +516,122 @@ app.get('/extras', async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 });
-// Endpoint do pobierania dodatk�w o danym typie
+app.delete('/extras/:id', requireEmployeeAuth, async (req, res) => {
+    const { id } = req.params;
+
+    try {
+        // Zapytanie do bazy danych, aby usunąć rekord z tabeli extras o podanym id
+        const deleteResult = await pool.query(
+            'DELETE FROM extras WHERE extrasid = $1',
+            [id]
+        );
+
+        // Sprawdzenie czy rekord został usunięty
+        if (deleteResult.rowCount === 0) {
+            return res.status(404).json({ error: 'Extra not found' });
+        }
+
+        res.status(200).json({ message: 'Extra deleted successfully' });
+    } catch (error) {
+        console.error('Delete error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+// Endpoint do pobierania dodatków o danym typie
 app.get('/extras/:extrascategory', async (req, res) => {
     const { extrascategory } = req.params;
 
     try {
-        // Wykonaj zapytanie do bazy danych, aby pobra� dodatki o danym typie
+        // Wykonaj zapytanie do bazy danych, aby pobrać dodatki o danym typie
         const queryResult = await pool.query(
             'SELECT * FROM public.extras WHERE extrascategory = $1',
             [extrascategory]
         );
 
-        // Sprawd�, czy znaleziono jakie� dodatki
+        // Sprawdź, czy znaleziono jakieś dodatki
         if (queryResult.rows.length === 0) {
             return res.status(404).json({ error: 'No extras found for the given category' });
         }
 
-        // Zwr�� znalezione dodatki
+        // Zwróć znalezione dodatki
         res.json(queryResult.rows);
     } catch (error) {
         console.error('Error fetching extras:', error);
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-app.put('/extras/:extrasId', async (req, res) => {
+app.get('/orders/todo', requireEmployeeAuth, async (req, res) => {
+    try {
+        // Query the database to fetch orders with a status other than 'Completed'
+        const ordersQueryResult = await pool.query(
+            'SELECT o.orderid, o.userid, o.orderdate, o.wholeprice, o.orderstatus, o.is_take_out, ' +
+            'p.productid, p.name AS product_name, p.description AS product_description, p.productprice, ' +
+            'e.extrasid, e.name AS extras_name, e.extrasprice ' +
+            'FROM orders o ' +
+            'LEFT JOIN product_extras_to_order pe ON o.orderid = pe.orderid ' +
+            'LEFT JOIN products p ON pe.productid = p.productid ' +
+            'LEFT JOIN extras e ON pe.extrasid = e.extrasid ' +
+            'WHERE o.orderstatus != $1',
+            ['Completed']
+        );
+
+        // Process the query results to format them as needed
+        const ordersMap = new Map();
+
+        ordersQueryResult.rows.forEach(row => {
+            if (!ordersMap.has(row.orderid)) {
+                ordersMap.set(row.orderid, {
+                    orderid: row.orderid,
+                    userid: row.userid,
+                    orderdate: row.orderdate,
+                    wholeprice: row.wholeprice,
+                    orderstatus: row.orderstatus,
+                    is_take_out: row.is_take_out, // Include is_take_out field
+                    products: []
+                });
+            }
+
+            const order = ordersMap.get(row.orderid);
+            const productIndex = order.products.findIndex(p => p.productid === row.productid);
+
+            if (productIndex === -1) {
+                order.products.push({
+                    productid: row.productid,
+                    product_name: row.product_name,
+                    product_description: row.product_description,
+                    productprice: row.productprice,
+                    extras: []
+                });
+            }
+
+            const product = order.products.find(p => p.productid === row.productid);
+
+            if (row.extrasid) {
+                product.extras.push({
+                    extrasid: row.extrasid,
+                    extras_name: row.extras_name,
+                    extrasprice: row.extrasprice
+                });
+            }
+        });
+
+        // Return the formatted order information as a response
+        res.json(Array.from(ordersMap.values()));
+    } catch (error) {
+        console.error('Query error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
+
+
+app.put('/extras/:extrasId', requireEmployeeAuth, async (req, res) => {
     const { extrasId } = req.params;
     const { name, extrasprice, extrascategory } = req.body;
 
     try {
-        // Sprawd�, czy dodatek o podanym ID istnieje
+        // Sprawdź, czy dodatek o podanym ID istnieje
         const existingExtra = await pool.query('SELECT * FROM extras WHERE extrasid = $1', [extrasId]);
         if (existingExtra.rows.length === 0) {
             return res.status(404).json({ error: 'Extra not found' });
@@ -332,7 +643,7 @@ app.put('/extras/:extrasId', async (req, res) => {
             [name, extrasprice, extrascategory, extrasId]
         );
 
-        // Zwr�� zaktualizowany dodatek
+        // Zwróć zaktualizowany dodatek
         res.json(queryResult.rows[0]);
     } catch (error) {
         console.error('Error updating extra:', error);
@@ -341,8 +652,9 @@ app.put('/extras/:extrasId', async (req, res) => {
 });
 // Handling POST request on /products endpoint
 app.post('/products', requireEmployeeAuth, async (req, res) => {
-    const { name, description, productprice, productcategory } = req.body;
+    const { name, description, productprice, productcategory, is_locked } = req.body;
     const image = req.file ? req.file.buffer : null; // Get image data from form
+
     try {
         let resizedImageBuffer = null;
         if (image) {
@@ -351,11 +663,21 @@ app.post('/products', requireEmployeeAuth, async (req, res) => {
                 .resize({ width: 256, height: 256 })
                 .toBuffer();
         }
+
+        let queryText;
+        let queryParams;
+
+        if (is_locked !== undefined) {
+            queryText = 'INSERT INTO products (name, description, productprice, productcategory, image, is_locked) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *';
+            queryParams = [name, description, productprice, productcategory, resizedImageBuffer, is_locked];
+        } else {
+            queryText = 'INSERT INTO products (name, description, productprice, productcategory, image) VALUES ($1, $2, $3, $4, $5) RETURNING *';
+            queryParams = [name, description, productprice, productcategory, resizedImageBuffer];
+        }
+
         // Query database to add a new product
-        const queryResult = await pool.query(
-            'INSERT INTO products (name, description, productprice, productcategory, image) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [name, description, productprice, productcategory, resizedImageBuffer]
-        );
+        const queryResult = await pool.query(queryText, queryParams);
+
         // Return the added product as response
         res.status(201).json(queryResult.rows[0]);
     } catch (error) {
@@ -365,7 +687,7 @@ app.post('/products', requireEmployeeAuth, async (req, res) => {
 });
 app.put('/products/:productId', requireEmployeeAuth, async (req, res) => {
     const { productId } = req.params;
-    const { name, description, productprice, productcategory } = req.body;
+    const { name, description, productprice, productcategory, is_locked } = req.body;
     const image = req.file ? req.file.buffer : null; // Get image data from form
 
     try {
@@ -377,11 +699,19 @@ app.put('/products/:productId', requireEmployeeAuth, async (req, res) => {
                 .toBuffer();
         }
 
+        let queryText;
+        let queryParams;
+
+        if (is_locked !== undefined) {
+            queryText = 'UPDATE products SET name = $1, description = $2, productprice = $3, productcategory = $4, image = $5, is_locked = $6 WHERE productid = $7 RETURNING *';
+            queryParams = [name, description, productprice, productcategory, resizedImageBuffer, is_locked, productId];
+        } else {
+            queryText = 'UPDATE products SET name = $1, description = $2, productprice = $3, productcategory = $4, image = $5 WHERE productid = $6 RETURNING *';
+            queryParams = [name, description, productprice, productcategory, resizedImageBuffer, productId];
+        }
+
         // Query to update product
-        const queryResult = await pool.query(
-            'UPDATE products SET name = $1, description = $2, productprice = $3, productcategory = $4, image = $5 WHERE productid = $6 RETURNING *',
-            [name, description, productprice, productcategory, resizedImageBuffer, productId]
-        );
+        const queryResult = await pool.query(queryText, queryParams);
 
         // Check if product with given ID exists
         if (queryResult.rows.length === 0) {
@@ -397,18 +727,18 @@ app.put('/products/:productId', requireEmployeeAuth, async (req, res) => {
 });
 
 
+
 // Handling DELETE request on /products/:productId endpoint
 app.delete('/products/:productId', requireEmployeeAuth, async (req, res) => {
     const productId = req.params.productId;
-    console.log("uda�o si�")
-    //try {
-        // Execute query to delete product with given id
-        //await pool.query('DELETE FROM products WHERE productid = $1', [productId]);
-        //res.status(204).send(); // Return 204 No Content status on success
-    //} catch (error) {
-        //console.error('Error deleting product ', error);
-       //res.status(500).json({ error: 'Server error' });
-   // }
+    try {
+        //Execute query to delete product with given id
+        await pool.query('DELETE FROM products WHERE productid = $1', [productId]);
+        res.status(204).send(); // Return 204 No Content status on success
+    } catch (error) {
+       console.error('Error deleting product ', error);
+       res.status(500).json({ error: 'Server error' });
+    }
 });
 app.post('/inventory', requireEmployeeAuth, async (req, res) => {
     const { itemname, itemquantity } = req.body;
@@ -472,6 +802,24 @@ app.put('/inventory/:inventoryId', requireEmployeeAuth, async (req, res) => {
         res.status(500).json({ error: 'Server error' });
     }
 });
+app.post('/extras', requireEmployeeAuth, async (req, res) => {
+    const { name, extrasprice, extrascategory } = req.body;
+
+    try {
+        // Wstawienie nowego rekordu do tabeli extras
+        const insertResult = await pool.query(
+            'INSERT INTO extras (name, extrasprice, extrascategory) VALUES ($1, $2, $3) RETURNING *',
+            [name, extrasprice, extrascategory]
+        );
+
+        // Zwrócenie nowo dodanego rekordu jako odpowiedź
+        res.status(201).json(insertResult.rows[0]);
+    } catch (error) {
+        console.error('Insert error:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+});
+
 app.get('/inventory', requireEmployeeAuth, async (req, res) => {
     try {
         // Query to get all items from inventory
@@ -503,7 +851,7 @@ app.post('/user/address', requireUserAuth, async (req, res) => {
         // Pobranie ID dodanego adresu
         const addressId = queryResult.rows[0].addressid;
 
-        // Aktualizacja adresu u�ytkownika w tabeli users
+        // Aktualizacja adresu użytkownika w tabeli users
         await pool.query(
             'UPDATE users SET addressid = $1 WHERE userid = $2',
             [addressId, userId]
@@ -520,13 +868,13 @@ app.put('/user/address', requireUserAuth, async (req, res) => {
     const userId = req.session.user.userId;
 
     try {
-        // Pobranie ID adresu u�ytkownika z tabeli users
+        // Pobranie ID adresu użytkownika z tabeli users
         const userQueryResult = await pool.query(
             'SELECT addressid FROM users WHERE userid = $1',
             [userId]
         );
 
-        // Sprawdzenie, czy u�ytkownik ma przypisany adres
+        // Sprawdzenie, czy użytkownik ma przypisany adres
         if (userQueryResult.rows.length === 0) {
             return res.status(404).json({ error: 'User address not found' });
         }
@@ -549,26 +897,26 @@ app.delete('/user/address', requireUserAuth, async (req, res) => {
     const userId = req.session.user.userId;
 
     try {
-        // Pobranie ID adresu u�ytkownika z tabeli users
+        // Pobranie ID adresu użytkownika z tabeli users
         const userQueryResult = await pool.query(
             'SELECT addressid FROM users WHERE userid = $1',
             [userId]
         );
 
-        // Sprawdzenie, czy u�ytkownik ma przypisany adres
+        // Sprawdzenie, czy użytkownik ma przypisany adres
         if (userQueryResult.rows.length === 0) {
             return res.status(404).json({ error: 'User address not found' });
         }
 
         const addressId = userQueryResult.rows[0].addressid;
 
-        // Usuni�cie adresu z tabeli addresses
+        // Usunięcie adresu z tabeli addresses
         await pool.query(
             'DELETE FROM addresses WHERE addressid = $1',
             [addressId]
         );
 
-        // Usuni�cie referencji do adresu w tabeli users
+        // Usunięcie referencji do adresu w tabeli users
         await pool.query(
             'UPDATE users SET addressid = NULL WHERE userid = $1',
             [userId]
