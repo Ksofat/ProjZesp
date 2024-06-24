@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager Panel - Products</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.0/css/bulma.min.css">
+    <link rel="stylesheet" href="../css/card-styles.css">
+    <link rel="stylesheet" href="../css/nav-styles.css">
+    <script defer src="manager-products.js"></script>
+    <script defer src="manager-extras.js"></script>
+    <script defer src="../js/cart.js"></script>
+</head>
+<body>
+    <nav class="navbar" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="/">
+                <img src="../img/kebab.png" alt="FoodOrdering Logo" width="112" height="28">
+            </a>
+    
+            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </a>
+        </div>
+    
+        <div id="navbarBasicExample" class="navbar-menu">
+            <div class="navbar-end">
+                <div class="navbar-item has-dropdown is-hoverable">
+                    <a class="navbar-link is-black has-text-weight-bold has-text-primary-dark">
+                        Account
+                    </a>
+    
+                    <div class="navbar-dropdown">
+                        <a class="navbar-item" id="signInLink">
+                            Sign In
+                        </a>
+                        <a class="navbar-item" id="logInLink">
+                            Log In
+                        </a>
+                        <!-- Placeholder for logout button -->
+                        <div id="auth-buttons"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <section class="section">
+        <div class="container">
+            <p class="title is-3 has-text-centered">Products</p>
+            <div class="columns is-multiline" id="products-container">
+                <!-- Products will be dynamically rendered here -->
+                <div class="column is-full">
+                    <div class="card">
+                        <header class="card-header">
+                            <p class="card-header-title">
+                                Add New Product
+                            </p>
+                        </header>
+                        <div class="card-content">
+                            <form id="productForm" enctype="multipart/form-data">
+                                <div class="columns">
+                                    <div class="column">
+                                        <!-- Product Name and Category in one column -->
+                                        <div class="field">
+                                            <label class="label">Product Name</label>
+                                            <div class="control">
+                                                <input class="input" type="text" id="productName" placeholder="Product Name" required>
+                                            </div>
+                                        </div>
+                                        <div class="field">
+                                            <label class="label">Category</label>
+                                            <div class="control">
+                                                <input class="input" type="text" id="productCategory" placeholder="Product Category" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="column">
+                                        <!-- Price and Image in another column -->
+                                        <div class="field">
+                                            <label class="label">Price</label>
+                                            <div class="control">
+                                                <input class="input" type="number" id="productPrice" placeholder="Product Price" min="0" step="0.01" required>
+                                            </div>
+                                        </div>
+                                        <div class="field">
+                                            <label class="label">Product Image</label>
+                                            <div class="control">
+                                                <input class="input" type="file" id="productImage" accept="image/*">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <label class="label">Description</label>
+                                    <div class="control">
+                                        <textarea class="textarea" id="productDescription" maxlength="80" placeholder="Product Description" required></textarea>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="control">
+                                        <button class="button is-primary" type="submit">Add Product</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <p class="title is-3 has-text-centered">Extras</p>
+            <div class="columns is-multiline" id="extras-container">
+                <!-- Extras will be dynamically rendered here -->
+                <div class="column is-full">
+                    <div class="card">
+                        <header class="card-header">
+                            <p class="card-header-title">
+                                Add New Extra
+                            </p>
+                        </header>
+                        <div class="card-content">
+                            <form id="extraForm" enctype="multipart/form-data">
+                                <div class="columns">
+                                    <div class="column">
+                                        <!-- Extra Name and Category in one column -->
+                                        <div class="field">
+                                            <label class="label">Extra Name</label>
+                                            <div class="control">
+                                                <input class="input" type="text" id="extraName" placeholder="Extra Name" required>
+                                            </div>
+                                        </div>
+                                        <div class="field">
+                                            <label class="label">Category</label>
+                                            <div class="control">
+                                                <input class="input" type="text" id="extraCategory" placeholder="Extra Category" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="column">
+                                        <!-- Price in another column -->
+                                        <div class="field">
+                                            <label class="label">Price</label>
+                                            <div class="control">
+                                                <input class="input" type="number" id="extraPrice" placeholder="Extra Price" min="0" step="0.01" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="control">
+                                        <button class="button is-primary" type="submit">Add Extra</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div id="edit-product-modal" class="modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Edit Product</p>
+                <button class="delete" aria-label="close" onclick="closeEditModal()"></button>
+            </header>
+            <section class="modal-card-body">
+                <form id="editProductForm">
+                    <input type="hidden" id="edit-product-id" name="product_id">
+                    <div class="field">
+                        <label class="label">Product Name</label>
+                        <div class="control">
+                            <input class="input" type="text" id="edit-product-name" placeholder="Product Name" required>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Category</label>
+                        <div class="control">
+                            <input class="input" type="text" id="edit-product-category" placeholder="Product Category" required>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Price</label>
+                        <div class="control">
+                            <input class="input" type="number" id="edit-product-price" min="0" placeholder="Product Price" required>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Description</label>
+                        <div class="control">
+                            <textarea class="textarea" id="edit-product-description" maxlength="80" placeholder="Product Description" required></textarea>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Product Image</label>
+                        <div class="control">
+                            <input class="input" type="file" id="edit-product-image" accept="image/*">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Locked</label>
+                        <div class="control">
+                            <input class="checkbox" type="checkbox" id="edit-product-locked">
+                            Locked
+                        </div>
+                    </div>
+                </form>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-success" onclick="submitProductEdit()">Save changes</button>
+                <button class="button" onclick="closeEditModal()">Cancel</button>
+            </footer>
+        </div>
+    </div>
+
+    <div class="modal" id="edit-extra-modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Edit Extra</p>
+                <button class="delete" aria-label="close" onclick="document.getElementById('edit-extra-modal').classList.remove('is-active');"></button>
+            </header>
+            <section class="modal-card-body">
+                <form id="edit-extra-form">
+                    <input type="hidden" id="edit-extra-id">
+                    <div class="field">
+                        <label class="label">Name</label>
+                        <div class="control">
+                            <input class="input" type="text" id="edit-extra-name" required>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Price</label>
+                        <div class="control">
+                            <input class="input" type="number" id="edit-extra-price" min="0" required>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Category</label>
+                        <div class="control">
+                            <input class="input" type="text" id="edit-extra-category" required>
+                        </div>
+                    </div>
+                </form>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-success" onclick="submitExtraEdit()">Save changes</button>
+                <button class="button" onclick="document.getElementById('edit-extra-modal').classList.remove('is-active');">Cancel</button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Cart Modal -->
+    <div class="modal" id="cartModal">
+        <div class="modal-background"></div>
+        <div class="modal-card modal-content-custom">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Your Cart</p>
+                <button class="delete" aria-label="close" onclick="closeModal('cartModal')"></button>
+            </header>
+            <section class="modal-card-body">
+                <div class="modal-content has-background-white py-3 px-5">
+                    <table class="table is-fullwidth is-hoverable is-striped">
+                        <thead>
+                            <tr class="is-selected has-background-black has-text-centered">
+                                <th>Name</th>
+                                <th>Extras</th>
+                                <th>Price</th>
+                                <th>Remove</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cartItemsContainer" class="has-text-centered"></tbody>
+                        <tfoot>
+                            <tr class="is-selected has-background-black">
+                                <th colspan="4" id="total-cost" class="mt-4 is-uppercase"></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div class="mt-4 has-text-centered">
+                        <button class="button is-success" onclick="checkout()">Checkout</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="../js/login.js"></script>
+    <script>
+        document.getElementById('productForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append('name', document.getElementById('productName').value);
+            formData.append('description', document.getElementById('productDescription').value);
+            formData.append('productprice', document.getElementById('productPrice').value);
+            formData.append('productcategory', document.getElementById('productCategory').value);
+            formData.append('image', document.getElementById('productImage').files[0]);
+
+            fetch('/api/products', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Product added:', data);
+                fetchProducts();
+            })
+                .catch(error => console.error('Error adding product:', error));
+        });
+
+        document.getElementById('extraForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const formData = new FormData();
+            formData.append('name', document.getElementById('extraName').value);
+            formData.append('extrasprice', document.getElementById('extraPrice').value);
+            formData.append('extrascategory', document.getElementById('extraCategory').value);
+
+            fetch('/api/extras', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('Extra added:', data);
+                fetchExtras();
+            })
+            .catch(error => console.error('Error adding extra:', error));
+        });
+
+        // Call this function when the page loads or when needed
+        checkUserLoggedIn();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get all "navbar-burger" elements
+            const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+            // Check if there are any navbar burgers
+            if ($navbarBurgers.length > 0) {
+                // Add a click event on each of them
+                $navbarBurgers.forEach(el => {
+                    el.addEventListener('click', () => {
+                        // Get the target from the "data-target" attribute
+                        const target = el.dataset.target;
+                        const $target = document.getElementById(target);
+                        // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
+                        el.classList.toggle('is-active');
+                        $target.classList.toggle('is-active');
+                    });
+                });
+            }
+        });
+
+        function closeEditModal() {
+            document.getElementById('edit-product-modal').classList.remove('is-active');
+        }
+
+        function openEditModal() {
+            document.getElementById('edit-product-modal').classList.add('is-active');
+        }
+    </script>
+</body>
+</html>

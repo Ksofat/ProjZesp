@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Worker Panel - Products</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.0/css/bulma.min.css">
+    <link rel="stylesheet" href="../css/card-styles.css">
+    <link rel="stylesheet" href="../css/nav-styles.css">
+    <script defer src="worker-products.js"></script>
+    <script defer src="worker-inventory.js"></script>
+    <script defer src="../js/cart.js"></script>
+</head>
+<body>
+    <nav class="navbar" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="/">
+                <img src="../img/kebab.png" alt="FoodOrdering Logo" width="112" height="28">
+            </a>
+    
+            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </a>
+        </div>
+    
+        <div id="navbarBasicExample" class="navbar-menu">
+            <div class="navbar-end">
+                <div class="navbar-item has-dropdown is-hoverable">
+                    <a class="navbar-link is-black has-text-weight-bold has-text-primary-dark">
+                        Account
+                    </a>
+    
+                    <div class="navbar-dropdown">
+                        <a class="navbar-item" id="signInLink">
+                            Sign In
+                        </a>
+                        <a class="navbar-item" id="logInLink">
+                            Log In
+                        </a>
+                        <!-- Placeholder for logout button -->
+                        <div id="auth-buttons"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <section class="section">
+        <div class="container">
+            <p class="title is-3 has-text-centered">Products</p>
+            <div class="columns is-multiline" id="products-container">
+                <!-- Products will be dynamically rendered here -->
+            </div>
+            <p class="title is-3 has-text-centered">Inventory</p>
+            <div class="columns is-multiline" id="inventory-container">
+                <!-- Inventory will be dynamically rendered here -->
+                <div class="column is-full">
+                    <div class="card">
+                        <header class="card-header">
+                            <p class="card-header-title">
+                                Add New Inventory Item
+                            </p>
+                        </header>
+                        <div class="card-content">
+                            <form id="inventoryForm" enctype="multipart/form-data">
+                                <div class="columns">
+                                    <div class="column">
+                                        <!-- Item Name and Quantity in one column -->
+                                        <div class="field">
+                                            <label class="label">Item Name</label>
+                                            <div class="control">
+                                                <input class="input" type="text" id="itemName" placeholder="Item Name" required>
+                                            </div>
+                                        </div>
+                                        <div class="field">
+                                            <label class="label">Item Quantity</label>
+                                            <div class="control">
+                                                <input class="input" type="number" id="itemQuantity" placeholder="Item Quantity" min="0" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="field">
+                                    <div class="control">
+                                        <button class="button is-primary" type="submit">Add Item</button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+    <div id="edit-product-modal" class="modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Edit Product</p>
+                <button class="delete" aria-label="close" onclick="closeEditModal()"></button>
+            </header>
+            <section class="modal-card-body">
+                <form id="editProductForm">
+                    <input type="hidden" id="edit-product-id" name="product_id">
+                    <div class="field is-hidden">
+                        <label class="label">Product Name</label>
+                        <div class="control">
+                            <input class="input" type="text" id="edit-product-name" placeholder="Product Name" required readonly>
+                        </div>
+                    </div>
+                    <div class="field is-hidden">
+                        <label class="label">Category</label>
+                        <div class="control">
+                            <input class="input" type="text" id="edit-product-category" placeholder="Product Category" required readonly>
+                        </div>
+                    </div>
+                    <div class="field is-hidden">
+                        <label class="label">Price</label>
+                        <div class="control">
+                            <input class="input" type="number" id="edit-product-price" placeholder="Product Price" required readonly>
+                        </div>
+                    </div>
+                    <div class="field is-hidden">
+                        <label class="label">Description</label>
+                        <div class="control">
+                            <textarea class="textarea" id="edit-product-description" maxlength="80" placeholder="Product Description" required readonly></textarea>
+                        </div>
+                    </div>
+                    <div class="field is-hidden">
+                        <label class="label">Product Image</label>
+                        <div class="control">
+                            <input class="input" type="file" id="edit-product-image" accept="image/*">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Locked</label>
+                        <div class="control">
+                            <input class="checkbox" type="checkbox" id="edit-product-locked">
+                            Locked
+                        </div>
+                    </div>
+                </form>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-success" onclick="submitProductEdit()">Save changes</button>
+                <button class="button" onclick="closeEditModal()">Cancel</button>
+            </footer>
+        </div>
+    </div>
+
+    <div class="modal" id="edit-item-modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Edit Inventory Item</p>
+                <button class="delete" aria-label="close" onclick="document.getElementById('edit-item-modal').classList.remove('is-active');"></button>
+            </header>
+            <section class="modal-card-body">
+                <form id="edit-item-form">
+                    <input type="hidden" id="edit-item-id">
+                    <div class="field">
+                        <label class="label">Item Name</label>
+                        <div class="control">
+                            <input class="input" type="text" id="edit-item-name" required>
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Item Quantity</label>
+                        <div class="control">
+                            <input class="input" type="number" id="edit-item-quantity" min="0" required>
+                        </div>
+                    </div>
+                </form>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-success" onclick="submitItemEdit()">Save changes</button>
+                <button class="button" onclick="document.getElementById('edit-item-modal').classList.remove('is-active');">Cancel</button>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Cart Modal -->
+    <div class="modal" id="cartModal">
+        <div class="modal-background"></div>
+        <div class="modal-card modal-content-custom">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Your Cart</p>
+                <button class="delete" aria-label="close" onclick="closeModal('cartModal')"></button>
+            </header>
+            <section class="modal-card-body">
+                <div class="modal-content has-background-white py-3 px-5">
+                    <table class="table is-fullwidth is-hoverable is-striped">
+                        <thead>
+                            <tr class="is-selected has-background-black has-text-centered">
+                                <th>Name</th>
+                                <th>Extras</th>
+                                <th>Price</th>
+                                <th>Remove</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cartItemsContainer" class="has-text-centered"></tbody>
+                        <tfoot>
+                            <tr class="is-selected has-background-black">
+                                <th colspan="4" id="total-cost" class="mt-4 is-uppercase"></th>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <div class="mt-4 has-text-centered">
+                        <button class="button is-success" onclick="checkout()">Checkout</button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="../js/login.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            fetchInventory();
+
+            // Add event listener for form submission
+            document.getElementById('inventoryForm').addEventListener('submit', function(event) {
+                event.preventDefault();
+                const formData = new FormData();
+                formData.append('itemname', document.getElementById('itemName').value);
+                formData.append('itemquantity', document.getElementById('itemQuantity').value);
+
+                fetch('/inventory', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Item added:', data);
+                    fetchInventory();
+                })
+                .catch(error => console.error('Error adding item:', error));
+            });
+        });
+
+        
+        // Call this function when the page loads or when needed
+        checkUserLoggedIn();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get all "navbar-burger" elements
+            const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+            // Check if there are any navbar burgers
+            if ($navbarBurgers.length > 0) {
+                // Add a click event on each of them
+                $navbarBurgers.forEach(el => {
+                    el.addEventListener('click', () => {
+                        // Get the target from the "data-target" attribute
+                        const target = el.dataset.target;
+                        const $target = document.getElementById(target);
+                        // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
+                        el.classList.toggle('is-active');
+                        $target.classList.toggle('is-active');
+                    });
+                });
+            }
+        });
+
+        function closeEditModal() {
+            document.getElementById('edit-product-modal').classList.remove('is-active');
+        }
+
+        function openEditModal() {
+            document.getElementById('edit-product-modal').classList.add('is-active');
+        }
+    </script>
+</body>
+</html>
