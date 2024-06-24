@@ -1,0 +1,23 @@
+[V] Products - CRUD
+
+[V] Extras - CRUD
+
+[V] Staff - CRUD
+[V] tworzyć konta dla nowych pracowników, 
+[V] resetować im hasła
+[V] usuwać zwolnionych pracowników
+
+[V] Sales 
+    wyświetlania statystyk zamawianych potraw w danym okresie
+
+Wersja dla klientów:
+[V] Składanie zamówień - Umożliwienie klientom łatwego składania zamówień przez aplikację i stronę internetową. 
+
+[V] Personalizacja zamówień – Będzie można edytować swoje zamówienia, np. dodając wybrane przez siebie dodatki od większej porcji mięsa aż po napoje
+[V] Sprawdzanie Koszyka – Po dodaniu dania do koszyka możliwe będzie usunięcie z niego produktów, albo późniejsza edycja dodanych tam produktów
+[V] Będzie możliwe zamawianie z dostawią albo odbiorem osobistym, przy czym każda opcja będzie miała możliwość 
+[V] płatności przy odbiorze albo z góry
+[V] Przeglądanie Menu
+[V] Możliwe będzie wyszukiwanie konkretnych produktów, 
+[V] wyświetlanie tylko produktów z danej kategorii np. Wegetariańskie.
+[V] Edycję swojego konta – użytkownik będzie mógł zmienić swoje dane, takie jak hasło czy adres zamieszkania
