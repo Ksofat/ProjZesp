@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manager Panel - Staff</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.0/css/bulma.min.css">
+    <link rel="stylesheet" href="../css/card-styles.css">
+    <link rel="stylesheet" href="../css/nav-styles.css">
+    <script defer src="manager-staff.js"></script>
+    <script defer src="worker-staff.js"></script>
+</head>
+<body>
+    <nav class="navbar" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+            <a class="navbar-item" href="/">
+                <img src="../img/kebab.png" alt="FoodOrdering Logo" width="112" height="28">
+            </a>
+    
+            <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false" data-target="navbarBasicExample">
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+                <span aria-hidden="true"></span>
+            </a>
+        </div>
+    
+        <div id="navbarBasicExample" class="navbar-menu">
+            <div class="navbar-end">
+                <div class="navbar-item has-dropdown is-hoverable">
+                    <a class="navbar-link is-black has-text-weight-bold has-text-primary-dark">
+                        Account
+                    </a>
+    
+                    <div class="navbar-dropdown">
+                        <a class="navbar-item" id="signInLink">
+                            Sign In
+                        </a>
+                        <a class="navbar-item" id="logInLink">
+                            Log In
+                        </a>
+                        <!-- Placeholder for logout button -->
+                        <div id="auth-buttons"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <section class="section">
+        <div class="container">
+            <h1 class="title">Staff Management</h1>
+            <div class="box">
+                <h2 class="subtitle">Managers</h2>
+                <table class="table is-striped is-bordered is-fullwidth" id="managersTable">
+                    <thead>
+                        <tr class="is-selected has-background-black">
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Email</th>
+                            <th>Phone Number</th>
+                            <th>Edit</th>
+                            <th>Delete</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Managers will be listed here -->
+                    </tbody>
+                </table>
+                <!-- Form inputs will be dynamically inserted here -->
+                <table class="table is-striped is-bordered is-fullwidth">
+                    <h2 class="subtitle">Add Manager</h2>
+                    <div id="warningMessageManager" class="notification has-background-danger has-text-weight-bold has-text-white has-text-centered is-hidden"></div>
+                    <tfoot>
+                        <tr class="is-selected has-background-black">
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Email</th>
+                            <th>Password</th>
+                            <th>Phone Number</th>
+                            <th>Submit</th>
+                        </tr>
+                        <tr id="addManagerRow">
+                            <!-- Form inputs will be dynamically inserted here -->
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            <div class="box">
+                <h2 class="subtitle">Workers</h2>
+                <table class="table is-striped is-bordered is-fullwidth" id="workersTable">
+                    <thead>
+                        <tr class="is-selected has-background-black">
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Email</th>
+                            <th>Phone Number</th>
+                            <th>Edit</th>
+                            <th>Delete</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Workers will be listed here -->
+                    </tbody>
+                </table>
+                <h2 class="subtitle">Add Worker</h2>
+                <div id="warningMessageWorker" class="notification has-background-danger has-text-weight-bold has-text-white has-text-centered is-hidden"></div>
+                <table class="table is-striped is-bordered is-fullwidth">
+                    <tfoot>
+                        <tr class="is-selected has-background-black">
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Email</th>
+                            <th>Password</th>
+                            <th>Phone Number</th>
+                            <th>Submit</th>
+                        </tr>
+                        <tr id="addWorkerRow">
+                            <!-- Form inputs will be dynamically inserted here -->
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    <div class="modal" id="edit-manager-modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Edit Manager</p>
+                <button class="delete" aria-label="close" onclick="closeManagerEditModal()"></button>
+            </header>
+            <section class="modal-card-body">
+                <form id="editManagerForm">
+                    <input type="hidden" id="editManagerUserId" value="someUserId">
+                    <div class="field">
+                        <label class="label">First Name</label>
+                        <div class="control">
+                            <input class="input" type="text" id="editManagerFirstName" placeholder="First Name">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Last Name</label>
+                        <div class="control">
+                            <input class="input" type="text" id="editManagerLastName" placeholder="Last Name">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Email</label>
+                        <div class="control">
+                            <input class="input" type="email" id="editManagerEmail" placeholder="Email">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Password</label>
+                        <div class="control">
+                            <input class="input" type="password" id="editManagerPassword" placeholder="Enter new password (leave blank to keep current)">
+                            <input type="checkbox" onclick="togglePasswordVisibility('editManagerPassword', 'signupToggleIcon')"> Show Password
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Phone Number</label>
+                        <div class="control">
+                            <input class="input" type="text" id="editManagerPhone" placeholder="Phone Number" onkeypress="filterNonDigits(event)" minlength="9" maxlength="9">
+                        </div>
+                    </div>
+                </form>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-success" onclick="submitEditManager()">Save changes</button>
+                <button class="button" onclick="closeManagerEditModal()">Cancel</button>
+            </footer>
+        </div>
+    </div>
+
+    <div class="modal" id="edit-worker-modal">
+        <div class="modal-background"></div>
+        <div class="modal-card">
+            <header class="modal-card-head">
+                <p class="modal-card-title">Edit Worker</p>
+                <button class="delete" aria-label="close" onclick="closeWorkerEditModal()"></button>
+            </header>
+            <section class="modal-card-body">
+                <form id="editWorkerForm">
+                    <input type="hidden" id="editWorkerUserId" value="someUserId">
+                    <div class="field">
+                        <label class="label">First Name</label>
+                        <div class="control">
+                            <input class="input" type="text" id="editWorkerFirstName" placeholder="First Name">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Last Name</label>
+                        <div class="control">
+                            <input class="input" type="text" id="editWorkerLastName" placeholder="Last Name">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Email</label>
+                        <div class="control">
+                            <input class="input" type="email" id="editWorkerEmail" placeholder="Email">
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Password</label>
+                        <div class="control">
+                            <input class="input" type="password" id="editWorkerPassword" placeholder="Enter new password (leave blank to keep current)">
+                            <input type="checkbox" onclick="togglePasswordVisibility('editWorkerPassword', 'signupToggleIcon')"> Show Password
+                        </div>
+                    </div>
+                    <div class="field">
+                        <label class="label">Phone Number</label>
+                        <div class="control">
+                            <input class="input" type="text" id="editWorkerPhone" placeholder="Phone Number" onkeypress="filterNonDigits(event)" minlength="9" maxlength="9">
+                        </div>
+                    </div>
+                </form>
+            </section>
+            <footer class="modal-card-foot">
+                <button class="button is-success" onclick="submitEditWorker()">Save changes</button>
+                <button class="button" onclick="closeWorkerEditModal()">Cancel</button>
+            </footer>
+        </div>
+    </div>
+
+    <script src="../js/login.js"></script>
+    <script>
+        function checkPasswordValidity(input) {
+            var helpText = document.getElementById('passwordHelp');
+            if (input.checkValidity()) {
+                input.classList.remove('is-danger');
+                input.classList.add('is-success');
+            } else {
+                input.classList.remove('is-success');
+                input.classList.add('is-danger');
+            }
+        }
+
+        // Call this function when the page loads or when needed
+        checkUserLoggedIn();
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get all "navbar-burger" elements
+            const $navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
+            // Check if there are any navbar burgers
+            if ($navbarBurgers.length > 0) {
+                // Add a click event on each of them
+                $navbarBurgers.forEach(el => {
+                    el.addEventListener('click', () => {
+                        // Get the target from the "data-target" attribute
+                        const target = el.dataset.target;
+                        const $target = document.getElementById(target);
+                        // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
+                        el.classList.toggle('is-active');
+                        $target.classList.toggle('is-active');
+                    });
+                });
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            insertAddManagerForm();
+            insertAddWorkerForm();
+            fetchManagers();
+            fetchWorkers();
+        });
+
+        function openManagerEditModal(manager) {
+            document.getElementById('editManagerUserId').value = manager.userid;
+            document.getElementById('editManagerFirstName').value = manager.firstname;
+            document.getElementById('editManagerLastName').value = manager.lastname;
+            document.getElementById('editManagerEmail').value = manager.email;
+            document.getElementById('editManagerPhone').value = manager.phonenumber;
+            document.getElementById('edit-manager-modal').classList.add('is-active');
+        }
+
+        function closeManagerEditModal() {
+            document.getElementById('edit-manager-modal').classList.remove('is-active');
+        }
+
+        function openWorkerEditModal(worker) {
+            document.getElementById('editWorkerUserId').value = worker.userid;
+            document.getElementById('editWorkerFirstName').value = worker.firstname;
+            document.getElementById('editWorkerLastName').value = worker.lastname;
+            document.getElementById('editWorkerEmail').value = worker.email;
+            document.getElementById('editWorkerPhone').value = worker.phonenumber;
+            document.getElementById('edit-worker-modal').classList.add('is-active');
+        }
+
+        function closeWorkerEditModal() {
+            document.getElementById('edit-worker-modal').classList.remove('is-active');
+        }
+
+    </script>
+</body>
+</html>

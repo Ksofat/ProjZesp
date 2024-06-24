@@ -1,0 +1,9 @@
+.navbar {
+    background-color: #000000; /* Light grey background */
+    box-shadow: 0 2px 3px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+}
+
+.navbar-item img {
+    max-height: 2rem; /* Ensures the logo is not too large */
+    max-width: 2rem;
+}

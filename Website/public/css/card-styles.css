@@ -1,0 +1,27 @@
+.card{
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    border-radius: 0.5rem;
+}
+
+.card-equal-height {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+ 
+.card-equal-height .card-footer {
+   margin-top: auto;
+}
+
+.card img{
+    border-radius: 0.5rem;
+    max-width: auto;
+    max-height: 90%;
+    margin: 0 auto;
+}
+
+.modal-content-custom {
+    width: auto; /* Adjust this as needed, could be a percentage or fixed width */
+    max-width: 100%; /* Ensures it does not exceed the screen width */
+    overflow: hidden; /* Optional, for handling overflowing content */
+}
